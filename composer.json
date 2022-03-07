@@ -1,0 +1,36 @@
+{
+  "name": "bonecreative/facebook-conversions-api",
+  "description": "Laravel package boilerplate.",
+  "keywords": [
+    "laravel",
+    "package"
+  ],
+  "type": "laravel",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Tarek Adam",
+      "email": "tarek@fuqu.io"
+    }
+  ],
+  "minimum-stability": "dev",
+  "autoload": {
+    "psr-4": {
+      "BoneCreative\\FacebookConversionsApi\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "BoneCreative\\Test\\": "tests/"
+    }
+  },
+  "require": {},
+  "extra": {
+    "laravel": {
+      "providers": [
+        "BoneCreative\\FacebookConversionsApi\\ServiceProvider",
+        "BoneCreative\\FacebookConversionsApi\\EventServiceProvider"
+      ]
+    }
+  }
+}
