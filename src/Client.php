@@ -2,6 +2,8 @@
 
 namespace BoneCreative\FacebookConversionsApi;
 
+use GuzzleHttp\Client as Guzzle;
+use GuzzleHttp\RequestOptions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Psr\Http\Message\ResponseInterface;
@@ -20,10 +22,23 @@ class Client
 	public $record  = [];
 	public $records = [];
 
-	public function __construct(){
-		$x = 5;
+	/**
+	 * Client constructor.
+	 *
+	 * @param string $api
+	 * @param string $pixel
+	 * @param string $token
+	 */
+	public function __construct(string $api, string $pixel, string $token)
+	{
+		$api = str_replace(
+			['{PIXEL_ID}',  '{TOKEN}'],
+			[$pixel,         $token]
+			, $api);
+
+		$this->guzzle = new Guzzle(['base_uri' => $api]);
 	}
-	
+
 	/**
 	 * @param $name
 	 * @param $arguments
@@ -44,7 +59,7 @@ class Client
 			}
 		}
 		
-		$route_info = parse_ini_file(static::$endpoints, true);
+		$route_info = parse_ini_file(__DIR__ . '/../config/endpoints.ini', true);
 		if(!empty($route_info[$name])){
 			$route_info = $route_info[$name];
 		}else{
@@ -71,7 +86,7 @@ class Client
 		if(in_array($call, ['post', 'put']) and !empty($params)){
 			$this->last_json = json_encode($params, JSON_UNESCAPED_SLASHES);
 			$params          = ['body' => json_encode($params, JSON_UNESCAPED_SLASHES)];
-			//$params = [RequestOptions::JSON => json_encode($params)];
+			$params = [RequestOptions::JSON => json_encode($params)];
 		}
 		
 		try{
