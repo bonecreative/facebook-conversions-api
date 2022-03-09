@@ -6,7 +6,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Psr\Http\Message\ResponseInterface;
 
-abstract class Client
+class Client
 {
 	
 	protected $guzzle;
@@ -19,6 +19,10 @@ abstract class Client
 	public $chunk   = [];
 	public $record  = [];
 	public $records = [];
+
+	public function __construct(){
+		$x = 5;
+	}
 	
 	/**
 	 * @param $name
