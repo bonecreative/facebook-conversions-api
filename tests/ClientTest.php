@@ -1,18 +1,32 @@
 <?php
-namespace Bone\Test;
+// @see https://developers.facebook.com/docs/marketing-api/conversions-api/payload-helper
+namespace Bone\Tests;
 
+use BoneCreative\FacebookConversionsApi\Client;
 use Tests\TestCase;
 
 class ClientTest extends TestCase
 {
-    /**
-     * A basic test example.
-     *
-     * @test
-     * @return void
-     */
-    public function testExample()
-    {
-        $this->assertTrue(true);
-    }
+
+	/**
+	 * @see \BoneCreative\FacebookConversionsApi\Client::initiateCheckout
+	 *
+	 * @test
+	 */
+	public function can_initiateCheckout()
+	{
+		$result = Client::initiateCheckout();
+		$this->assertTrue($result);
+	}
+
+	/**
+	 * @see \BoneCreative\FacebookConversionsApi\Client::purchase
+	 *
+	 * @test
+	 */
+	public function can_purchase()
+	{
+		$result = Client::purchase(69.69);
+		$this->assertTrue($result);
+	}
 }
