@@ -15,7 +15,7 @@ class ClientTest extends TestCase
 	 */
 	public function can_initiateCheckout()
 	{
-		$result = Client::initiateCheckout();
+		$result = Client::initiateCheckout('eamil@test.com');
 		$this->assertTrue($result);
 	}
 
