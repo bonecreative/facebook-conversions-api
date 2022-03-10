@@ -27,7 +27,7 @@ abstract class Client
 		return self::send($data);
 	}
 
-	public static function initiateCheckout()
+	public static function initiateCheckout($email)
 	{
 		$data = json_encode([
 			                    "event_name"    => "InitiateCheckout",
@@ -35,7 +35,7 @@ abstract class Client
 			                    "action_source" => "website",
 
 			                    "user_data" => [
-				                    "em" => [null],
+				                    "em" => [hash('sha256', $email)],
 				                    "ph" => [null],
 			                    ]
 		                    ]);
