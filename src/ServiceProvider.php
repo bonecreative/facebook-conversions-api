@@ -22,6 +22,7 @@ class ServiceProvider extends BaseServiceProvider
 	{
 
 		$this->bootConfig();
+		$this->bootRoutes();
 
 	}
 
@@ -32,14 +33,6 @@ class ServiceProvider extends BaseServiceProvider
 	 */
 	public function register()
 	{
-
-		$this->app->singleton(Client::class, function ()
-		{
-			$url    = 'https://graph.facebook.com/v13.0/{PIXEL_ID}/events';
-			$config = config(self::SHORT_NAME);
-
-			return new Client($url, $config['pixel_id'], $config['token']);
-		});
 	}
 
 
@@ -52,4 +45,11 @@ class ServiceProvider extends BaseServiceProvider
 		$this->mergeConfigFrom(__DIR__ . '/../config/main.php', SELF::SHORT_NAME);
 	}
 
+	/**
+	 * @internal
+	 */
+	private function bootRoutes()
+	{
+		$this->loadRoutesFrom(__DIR__ . '/../routes/main.php');
+	}
 }

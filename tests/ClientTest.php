@@ -1,58 +1,32 @@
 <?php
-
+// @see https://developers.facebook.com/docs/marketing-api/conversions-api/payload-helper
 namespace Bone\Tests;
 
 use BoneCreative\FacebookConversionsApi\Client;
-use BoneCreative\FacebookConversionsApi\ServiceProvider;
 use Tests\TestCase;
 
 class ClientTest extends TestCase
 {
 
-	protected $client;
-
-	/*public function setUp()
-	{
-		parent::setUp();
-
-		//$this->client = $this->app->make(Client::class);
-	}*/
-
 	/**
-	 * @see \BoneCreative\CheckFront\Client::__call
+	 * @see \BoneCreative\FacebookConversionsApi\Client::initiateCheckout
 	 *
 	 * @test
 	 */
-	public function can_test()
+	public function can_initiateCheckout()
 	{
+		$result = Client::initiateCheckout();
+		$this->assertTrue($result);
+	}
 
-		$t = time();
-
-		$client   = new \GuzzleHttp\Client();
-		$response = $client->request(
-			'POST',
-		                             'https://graph.facebook.com/v13.0/1422370724725387/events?test_event_code=TEST8912&access_token=EAAD5a08hxzIBAOU7xP6O0o0b6caMMVvUF9nr1cufpMgbke37LBjHxSZC67PTN5o38ucCgRLGX1ytvmXErmnk5rdww5qob1izgXqvbyU99LDXSb0A5ZAZAYMZC2dLejjlZAA2y5q59nIFcZBdadZC8v0SIDxRfw5uvOjNE1RCHuiOaRpWKWkQz4nFieJeNCjSfIZD'
-			, ['form_params' => [
-
-			'data' => '
-       [{
-          "event_name": "InitiateCheckout",
-             "event_time": '. $t .',
-             "action_source": "website",
-             "user_data": {
-          "em": [
-            null
-          ],
-                 "ph": [
-            null
-          ]
-           },
-         "custom_data": {
-          "currency": "USD",
-           "value": "99.53"
-         }
-       }]
-     '
-		]]);
+	/**
+	 * @see \BoneCreative\FacebookConversionsApi\Client::purchase
+	 *
+	 * @test
+	 */
+	public function can_purchase()
+	{
+		$result = Client::purchase(69.69);
+		$this->assertTrue($result);
 	}
 }

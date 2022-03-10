@@ -3,199 +3,70 @@
 namespace BoneCreative\FacebookConversionsApi;
 
 use GuzzleHttp\Client as Guzzle;
-use GuzzleHttp\RequestOptions;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
-use Psr\Http\Message\ResponseInterface;
 
-class Client
+abstract class Client
 {
-	
-	protected $guzzle;
-	private   $last_call = ['name' => '', 'args' => []];
-	public    $last_json = '';
-	
-	public $status = 205;
-	public $datum  = null;
-	
-	public $chunk   = [];
-	public $record  = [];
-	public $records = [];
 
-	/**
-	 * Client constructor.
-	 *
-	 * @param string $api
-	 * @param string $pixel
-	 * @param string $token
-	 */
-	public function __construct(string $api, string $pixel, string $token)
-	{
-		$api = str_replace(
-			['{PIXEL_ID}',  '{TOKEN}'],
-			[$pixel,         $token]
-			, $api);
+	public static function purchase($email, $amount){
+		$data = json_encode([
+			                    "event_name"    => "Purchase",
+			                    "event_time"    => time(),
+			                    "action_source" => "website",
 
-		$this->guzzle = new Guzzle(['base_uri' => $api]);
+			                    "user_data" => [
+				                    "em" => [hash('sha256', $email)],
+				                    "ph" => [null],
+			                    ],
+
+			                    "custom_data" => [
+				                    "currency" => config(ServiceProvider::SHORT_NAME .'.currency'),
+				                    "value"    => $amount,
+			                    ],
+		                    ]);
+
+		return self::send($data);
 	}
 
-	/**
-	 * @param $name
-	 * @param $arguments
-	 *
-	 * @return Client
-	 * @throws \Exception
-	 */
-	public function __call($name, $arguments)
+	public static function initiateCheckout()
 	{
-		$this->last_call = ['name' => $name, 'args' => $arguments];
-		
-		$params = (!empty($arguments[0])) ? $arguments[0] : [];
-		
-		if(!empty($arguments[1]) and is_array($arguments[1])){
-			$params = ['data' => $params];
-			foreach($arguments[1] as $dot_notation => $value){
-				Arr::set($params, 'data.' . $dot_notation, $value);
-			}
-		}
-		
-		$route_info = parse_ini_file(__DIR__ . '/../config/endpoints.ini', true);
-		if(!empty($route_info[$name])){
-			$route_info = $route_info[$name];
-		}else{
-			throw new \Exception('Missing route info.');
-		}
-		
-		$url = $route_info['uri'];
-		
-		foreach($params as $k => $v){
-			$pattern = '{' . $k . '}';
-			if(strpos($url, $pattern) !== false){
-				$url = str_replace($pattern, $v, $url);
-				unset($params[$k]);
-			}
-		}
-		
-		$call = strtolower($route_info['method']);
-		
-		if($call == 'get' and !empty($params)){
-			$url    .= '?' . http_build_query($params);
-			$params = [];
-		}
-		
-		if(in_array($call, ['post', 'put']) and !empty($params)){
-			$this->last_json = json_encode($params, JSON_UNESCAPED_SLASHES);
-			$params          = ['body' => json_encode($params, JSON_UNESCAPED_SLASHES)];
-			$params = [RequestOptions::JSON => json_encode($params)];
-		}
-		
-		try{
-			$result = $this->guzzle->$call($url, $params);
-			$this->setStatusAndContent($result, $route_info);
-		}catch(\Exception $exception){
-			Log::critical($exception);
-			throw $exception;
-		}
-		
-		
-		if(!in_array($this->status, [200, 404])){
-			throw new \Exception('Unable to parse 3rd party data.', $this->status);
-		}
-		
-		switch(true){
-			
-			case (!empty($this->record)):
-				return $this->record;
-			
-			case (!empty($this->records)):
-				return $this->records;
-			
-			default:
-				return null;
-		}
+		$data = json_encode([
+			                    "event_name"    => "InitiateCheckout",
+			                    "event_time"    => time(),
+			                    "action_source" => "website",
+
+			                    "user_data" => [
+				                    "em" => [null],
+				                    "ph" => [null],
+			                    ]
+		                    ]);
+
+		return self::send($data);
 	}
-	
-	/**
-	 * @param $name
-	 *
-	 * @return mixed|null
-	 */
-	public function __get($name)
+
+	private static function send($data)
 	{
-		if(!empty($this->$name)){
-			return $this->$name;
+
+		$config = config(ServiceProvider::SHORT_NAME);
+		$search = array_keys(array_change_key_case($config, CASE_UPPER));
+		foreach($search as &$i)
+		{
+			$i = '{' . $i . '}';
 		}
-		
-		$data = [$this->datum, $this->record];
-		
-		$iterator  = new \RecursiveArrayIterator($data);
-		$recursive = new \RecursiveIteratorIterator(
-			$iterator,
-			\RecursiveIteratorIterator::SELF_FIRST
-		);
-		foreach($recursive as $key => $value){
-			if($key === $name){
-				return $value;
-			}
+		$replace = array_values($config);
+
+		$url = str_replace($search, $replace, 'https://graph.facebook.com/v13.0/{PIXEL_ID}/events?access_token={TOKEN}');
+
+		if(env('APP_ENV') != 'production')
+		{
+			$url .= '&test_event_code='. config(ServiceProvider::SHORT_NAME .'.test_id');
 		}
-		
-		return null;
+
+		$client   = new Guzzle();
+		$response = $client->request('POST', $url, ['form_params' => ['data' => [$data]]]);
+
+		return ($response->getStatusCode() == 200)
+			? true
+			: false;
 	}
-	
-	
-	/**
-	 * @param ResponseInterface $result
-	 * @param array $route_info
-	 */
-	private function setStatusAndContent(ResponseInterface $result, array $route_info)
-	{
-		$this->status  = $result->getStatusCode();
-		$this->chunk   = [];
-		$this->record  = [];
-		$this->records = [];
-		
-		try{
-			$this->datum = $result->getBody();
-			
-			$this->datum = (!empty($this->datum)) ? json_decode($this->datum, true) : null;
-			if(json_last_error() !== JSON_ERROR_NONE){
-				throw new \Exception('Could not read response.');
-			}
-			
-			switch(true){
-				case (!empty($route_info['target'])):
-					$found = collect(Arr::get($this->datum, $route_info['target']));
-					switch(true){
-						case !!!($found->count()):
-							$this->status = 404;
-						break;
-						case ($found->count() >= 2):
-							$this->records = $found;
-						break;
-						default:
-							$this->record = $found;
-						break;
-					}
-				break;
-				
-				default:
-					$this->record = $this->datum;
-				break;
-			}
-			
-			$x = 5;
-		}catch(\Exception $exception){
-			$this->status = 205;
-			$this->datum  = null;
-		}
-	}
-	
-	/**
-	 * @return array
-	 * @internal
-	 */
-	public function getLastCall()
-	{
-		return $this->last_call;
-	}
+
 }
