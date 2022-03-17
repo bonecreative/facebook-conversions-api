@@ -4,8 +4,7 @@ namespace BoneCreative\FacebookConversionsApi;
 
 use GuzzleHttp\Client as Guzzle;
 
-abstract class Client
-{
+abstract class Client{
 
 	public static function purchase($email, $amount){
 		$data = json_encode([
@@ -19,7 +18,7 @@ abstract class Client
 			                    ],
 
 			                    "custom_data" => [
-				                    "currency" => config(ServiceProvider::SHORT_NAME .'.currency'),
+				                    "currency" => config(ServiceProvider::SHORT_NAME . '.currency'),
 				                    "value"    => $amount,
 			                    ],
 		                    ]);
@@ -27,8 +26,7 @@ abstract class Client
 		return self::send($data);
 	}
 
-	public static function initiateCheckout($email)
-	{
+	public static function initiateCheckout($email){
 		$data = json_encode([
 			                    "event_name"    => "InitiateCheckout",
 			                    "event_time"    => time(),
@@ -43,22 +41,20 @@ abstract class Client
 		return self::send($data);
 	}
 
-	private static function send($data)
-	{
+	private static function send($data){
 
 		$config = config(ServiceProvider::SHORT_NAME);
 		$search = array_keys(array_change_key_case($config, CASE_UPPER));
-		foreach($search as &$i)
-		{
+		foreach($search as &$i){
 			$i = '{' . $i . '}';
 		}
 		$replace = array_values($config);
 
 		$url = str_replace($search, $replace, 'https://graph.facebook.com/v13.0/{PIXEL_ID}/events?access_token={TOKEN}');
 
-		if(env('APP_ENV') != 'production')
-		{
-			$url .= '&test_event_code='. config(ServiceProvider::SHORT_NAME .'.test_id');
+		$test_id = config(ServiceProvider::SHORT_NAME . '.test_id');
+		if(!empty($test_id)){
+			$url .= '&test_event_code=' . config(ServiceProvider::SHORT_NAME . '.test_id');
 		}
 
 		$client   = new Guzzle();
@@ -66,7 +62,7 @@ abstract class Client
 
 		return ($response->getStatusCode() == 200)
 			? true
-			: false;
+			:false;
 	}
 
 }
